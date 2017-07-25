@@ -1,0 +1,7 @@
+/behat.yml
+/build/
+/composer.lock
+/custom.mk
+/phpspec.yml
+/phpunit.xml
+/vendor/
