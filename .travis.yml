@@ -45,7 +45,9 @@ install:
 before_script:
     - cp docker-compose.override.yml.dist docker-compose.override.yml
     - docker-compose up -d
-    - sleep 5
+    - timeout 15 bash -c 'until echo > /dev/tcp/localhost/11300; do sleep 0.5; done'
+    - timeout 15 bash -c 'until echo > /dev/tcp/localhost/6379; do sleep 0.5; done'
+    - timeout 15 bash -c 'until echo > /dev/tcp/localhost/5672; do sleep 0.5; done'
 
 script: $TEST_COMMAND
 
