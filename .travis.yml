@@ -15,7 +15,7 @@ php:
 
 env:
     global:
-        - TEST_COMMAND="composer test"
+        - TEST_COMMAND="composer test-ci"
 
 branches:
     except:
@@ -28,7 +28,7 @@ matrix:
         - php: nightly
     include:
         - php: 5.6
-          env: COMPOSER_FLAGS="--prefer-stable --prefer-lowest" COVERAGE=true TEST_COMMAND="composer test-coverage"
+          env: COMPOSER_FLAGS="--prefer-stable --prefer-lowest" COVERAGE=true TEST_COMMAND="composer test-ci-coverage"
 
 before_install:
     - if [[ $COVERAGE != true ]]; then phpenv config-rm xdebug.ini || true; fi
@@ -43,5 +43,7 @@ script: $TEST_COMMAND
 after_success: >
     if [[ $COVERAGE = true ]]; then
         wget https://scrutinizer-ci.com/ocular.phar
-        php ocular.phar code-coverage:upload --format=php-clover build/coverage.xml
+
+        php ocular.phar code-coverage:upload --format=php-clover build/unit_coverage.xml
+        php ocular.phar code-coverage:upload --format=php-clover build/functional_coverage.xml
     fi
