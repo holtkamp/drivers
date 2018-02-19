@@ -38,28 +38,7 @@ final class DriverTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function it_exposes_info()
-    {
-        $info = new \ArrayObject(['info' => true]);
-        $this->pheanstalk->stats()->willReturn($info);
-
-        $this->assertEquals(['info' => true], $this->driver->info());
-    }
-
-    /**
-     * @test
-     */
-    public function it_counts_number_of_messages_in_queue()
-    {
-        $this->pheanstalk->statsTube('send-newsletter')->willReturn(['current-jobs-ready' => 4]);
-
-        $this->assertEquals(4, $this->driver->countMessages('send-newsletter'));
-    }
-
-    /**
-     * @test
-     */
-    public function it_list_queues()
+    public function it_lists_queues()
     {
         $queues = [
             'failed',
@@ -74,25 +53,17 @@ final class DriverTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function it_acknowledges_a_message()
+    public function it_counts_the_number_of_messages_in_a_queue()
     {
-        $this->pheanstalk->delete(Argument::type(Job::class))->shouldBeCalled();
+        $this->pheanstalk->statsTube('send-newsletter')->willReturn(['current-jobs-ready' => 4]);
 
-        $this->driver->acknowledgeMessage('my-queue', new Job(1, null));
+        $this->assertEquals(4, $this->driver->countMessages('send-newsletter'));
     }
 
     /**
      * @test
      */
-    public function it_peeks_in_a_queue()
-    {
-        $this->assertEquals([], $this->driver->peekQueue('my-queue2'));
-    }
-
-    /**
-     * @test
-     */
-    public function it_pushes_messages()
+    public function it_pushes_a_message()
     {
         $this->pheanstalk->putInTube('my-queue', 'This is a message')->shouldBeCalled();
 
@@ -123,5 +94,34 @@ final class DriverTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(['message1', $job1], $this->driver->popMessage('my-queue1'));
         $this->assertEquals(['message2', $job2], $this->driver->popMessage('my-queue2'));
         $this->assertEquals([null, null], $this->driver->popMessage('my-queue3'));
+    }
+
+    /**
+     * @test
+     */
+    public function it_acknowledges_a_message()
+    {
+        $this->pheanstalk->delete(Argument::type(Job::class))->shouldBeCalled();
+
+        $this->driver->acknowledgeMessage('my-queue', new Job(1, null));
+    }
+
+    /**
+     * @test
+     */
+    public function it_peeks_in_a_queue()
+    {
+        $this->assertEquals([], $this->driver->peekQueue('my-queue2'));
+    }
+
+    /**
+     * @test
+     */
+    public function it_exposes_info()
+    {
+        $info = new \ArrayObject(['info' => true]);
+        $this->pheanstalk->stats()->willReturn($info);
+
+        $this->assertEquals(['info' => true], $this->driver->info());
     }
 }

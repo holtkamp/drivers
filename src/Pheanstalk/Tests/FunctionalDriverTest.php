@@ -48,22 +48,20 @@ final class FunctionalDriverTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function it_exposes_info()
+    public function it_lists_queues()
     {
-        $info = $this->driver->info();
+        $this->pheanstalk->putInTube('list', 'message');
 
-        // Some known pheanstalk metrics
-        $this->assertArrayHasKey('current-jobs-urgent', $info);
-        $this->assertArrayHasKey('current-jobs-ready', $info);
-        $this->assertArrayHasKey('current-jobs-reserved', $info);
-        $this->assertArrayHasKey('current-jobs-delayed', $info);
-        $this->assertArrayHasKey('current-jobs-buried', $info);
+        $queues = $this->driver->listQueues();
+
+        $this->assertContains('default', $queues);
+        $this->assertContains('list', $queues);
     }
 
     /**
      * @test
      */
-    public function it_counts_number_of_messages_in_queue()
+    public function it_counts_the_number_of_messages_in_a_queue()
     {
         $this->pheanstalk->putInTube('count', 'message');
         $this->pheanstalk->putInTube('count', 'message');
@@ -76,14 +74,26 @@ final class FunctionalDriverTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function it_list_queues()
+    public function it_pushes_a_message()
     {
-        $this->pheanstalk->putInTube('list', 'message');
+        $this->driver->pushMessage('push', 'This is a message');
 
-        $queues = $this->driver->listQueues();
+        $job = $this->pheanstalk->peekReady('push');
 
-        $this->assertContains('default', $queues);
-        $this->assertContains('list', $queues);
+        $this->assertEquals('This is a message', $job->getData());
+    }
+
+    /**
+     * @test
+     */
+    public function it_pops_messages()
+    {
+        $this->pheanstalk->putInTube('pop', 'message');
+
+        $message = $this->driver->popMessage('pop');
+
+        $this->assertEquals('message', $message[0]);
+        $this->assertEquals('message', $message[1]->getData());
     }
 
     /**
@@ -105,25 +115,15 @@ final class FunctionalDriverTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function it_pushes_messages()
+    public function it_exposes_info()
     {
-        $this->driver->pushMessage('push', 'This is a message');
+        $info = $this->driver->info();
 
-        $job = $this->pheanstalk->peekReady('push');
-
-        $this->assertEquals('This is a message', $job->getData());
-    }
-
-    /**
-     * @test
-     */
-    public function it_pops_messages()
-    {
-        $this->pheanstalk->putInTube('pop', 'message');
-
-        $message = $this->driver->popMessage('pop');
-
-        $this->assertEquals('message', $message[0]);
-        $this->assertEquals('message', $message[1]->getData());
+        // Some known pheanstalk metrics
+        $this->assertArrayHasKey('current-jobs-urgent', $info);
+        $this->assertArrayHasKey('current-jobs-ready', $info);
+        $this->assertArrayHasKey('current-jobs-reserved', $info);
+        $this->assertArrayHasKey('current-jobs-delayed', $info);
+        $this->assertArrayHasKey('current-jobs-buried', $info);
     }
 }

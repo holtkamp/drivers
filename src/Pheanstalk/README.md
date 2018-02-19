@@ -9,7 +9,7 @@
 
 Via Composer
 
-``` bash
+```bash
 $ composer require bernard/pheanstalk-driver
 ```
 
