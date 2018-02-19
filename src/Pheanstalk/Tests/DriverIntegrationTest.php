@@ -4,6 +4,7 @@ namespace Bernard\Driver\Pheanstalk\Tests;
 
 use Bernard\Driver\Pheanstalk\Driver;
 use Pheanstalk\Exception\ServerException;
+use Pheanstalk\Job;
 use Pheanstalk\Pheanstalk;
 
 /**
@@ -11,6 +12,9 @@ use Pheanstalk\Pheanstalk;
  */
 final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
 {
+    const QUEUE = 'queue';
+    const MESSAGE = 'message';
+
     /**
      * @var Pheanstalk
      */
@@ -50,7 +54,7 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
      */
     public function it_lists_queues()
     {
-        $this->pheanstalk->putInTube('list', 'message');
+        $this->pheanstalk->putInTube('list', self::MESSAGE);
 
         $queues = $this->driver->listQueues();
 
@@ -63,37 +67,38 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
      */
     public function it_counts_the_number_of_messages_in_a_queue()
     {
-        $this->pheanstalk->putInTube('count', 'message');
-        $this->pheanstalk->putInTube('count', 'message');
-        $this->pheanstalk->putInTube('count', 'message');
-        $this->pheanstalk->putInTube('count', 'message');
+        $this->pheanstalk->putInTube(self::QUEUE, self::MESSAGE);
+        $this->pheanstalk->putInTube(self::QUEUE, self::MESSAGE);
+        $this->pheanstalk->putInTube(self::QUEUE, self::MESSAGE);
+        $this->pheanstalk->putInTube(self::QUEUE, self::MESSAGE);
 
-        $this->assertEquals(4, $this->driver->countMessages('count'));
+        $this->assertEquals(4, $this->driver->countMessages(self::QUEUE));
     }
 
     /**
      * @test
      */
-    public function it_pushes_a_message()
+    public function it_pushes_a_message_to_a_queue()
     {
-        $this->driver->pushMessage('push', 'This is a message');
+        $this->driver->pushMessage(self::QUEUE, self::MESSAGE);
 
-        $job = $this->pheanstalk->peekReady('push');
+        $job = $this->pheanstalk->peekReady(self::QUEUE);
 
-        $this->assertEquals('This is a message', $job->getData());
+        $this->assertEquals(self::MESSAGE, $job->getData());
     }
 
     /**
      * @test
      */
-    public function it_pops_messages()
+    public function it_pops_messages_from_a_queue()
     {
-        $this->pheanstalk->putInTube('pop', 'message');
+        $this->pheanstalk->putInTube(self::QUEUE, self::MESSAGE);
 
-        $message = $this->driver->popMessage('pop');
+        $message = $this->driver->popMessage(self::QUEUE);
 
-        $this->assertEquals('message', $message[0]);
-        $this->assertEquals('message', $message[1]->getData());
+        $this->assertEquals(self::MESSAGE, $message[0]);
+        $this->assertInstanceOf(Job::class, $message[1]);
+        $this->assertEquals(self::MESSAGE, $message[1]->getData());
     }
 
     /**
@@ -101,10 +106,10 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
      */
     public function it_acknowledges_a_message()
     {
-        $this->pheanstalk->putInTube('ack', 'message');
-        $job = $this->pheanstalk->reserveFromTube('ack', 2);
+        $this->pheanstalk->putInTube(self::QUEUE, self::MESSAGE);
+        $job = $this->pheanstalk->reserveFromTube(self::QUEUE, 2);
 
-        $this->driver->acknowledgeMessage('ack', $job);
+        $this->driver->acknowledgeMessage(self::QUEUE, $job);
 
         $this->expectException(ServerException::class);
         $this->expectExceptionMessage(sprintf('NOT_FOUND: Job %d does not exist.', $job->getId()));
