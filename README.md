@@ -20,6 +20,7 @@ $ composer require bernard/drivers
 
 ## Drivers
 
+- [AMQP](src/Amqp)
 - [Iron MQ](src/IronMQ)
 - [Pheanstalk](src/Pheanstalk)
 - [Predis](src/Predis)

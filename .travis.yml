@@ -45,6 +45,7 @@ install:
 before_script:
     - cp docker-compose.override.yml.dist docker-compose.override.yml
     - docker-compose up -d
+    - sleep 5
 
 script: $TEST_COMMAND
 

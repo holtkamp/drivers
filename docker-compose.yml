@@ -6,3 +6,6 @@ services:
 
     redis:
         image: redis
+
+    rabbitmq:
+        image: rabbitmq
