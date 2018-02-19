@@ -13,7 +13,7 @@
 
 Via Composer
 
-``` bash
+```bash
 $ composer require bernard/drivers
 ```
 
