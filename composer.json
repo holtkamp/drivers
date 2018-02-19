@@ -19,12 +19,15 @@
     },
     "replace": {
         "bernard/pheanstalk-driver": "self.version",
+        "bernard/predis-driver": "self.version",
         "bernard/redis-driver": "self.version"
     },
     "require-dev": {
         "ext-redis": "*",
         "pda/pheanstalk": "^3.0",
-        "phpunit/phpunit": "^5.7 || ^6.0 || ^7.0"
+        "phpspec/prophecy": "^1.6.0",
+        "phpunit/phpunit": "^5.7 || ^6.0 || ^7.0",
+        "predis/predis": "^1.0"
     },
     "autoload": {
         "psr-4": {
