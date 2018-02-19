@@ -43,7 +43,8 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
     {
         $this->skipCleanup = false;
 
-        $this->amqp    = new AMQPStreamConnection($_ENV['RABBITMQ_HOST'], $_ENV['RABBITMQ_PORT'], 'guest', 'guest');
+        $this->amqp = new AMQPStreamConnection($_ENV['RABBITMQ_HOST'], $_ENV['RABBITMQ_PORT'], 'guest', 'guest');
+
         $this->channel = $this->amqp->channel();
 
         $this->channel->exchange_declare(self::EXCHANGE, 'direct', false, true, false);
@@ -55,6 +56,10 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
 
     public function tearDown()
     {
+        if (!$this->channel) {
+            $this->channel = $this->amqp->channel();
+        }
+
         if (!$this->skipCleanup) {
             $this->channel->queue_delete(self::QUEUE);
         }
