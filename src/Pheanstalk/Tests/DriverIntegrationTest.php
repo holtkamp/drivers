@@ -104,6 +104,14 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
+    public function it_returns_an_empty_message_when_popping_messages_from_an_empty_queue()
+    {
+        $this->assertEquals([null, null], $this->driver->popMessage(self::QUEUE, 1));
+    }
+
+    /**
+     * @test
+     */
     public function it_acknowledges_a_message()
     {
         $this->pheanstalk->putInTube(self::QUEUE, self::MESSAGE);
