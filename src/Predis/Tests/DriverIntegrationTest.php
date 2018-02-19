@@ -6,11 +6,13 @@ use Bernard\Driver\Predis\Driver;
 use Predis\Client;
 
 /**
- * @group    integration
- * @requires extension redis
+ * @group integration
  */
 final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
 {
+    const QUEUE = 'queue';
+    const MESSAGE = 'message';
+
     /**
      * @var Client
      */
@@ -38,10 +40,10 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
         $queues = $this->redis->smembers('queues');
 
         foreach ($queues as $queue) {
-            $this->redis->del('queue:' . $queue);
+            $this->redis->del(['queue:'.$queue]);
         }
 
-        $this->redis->del('queues');
+        $this->redis->del(['queues']);
     }
 
     /**
@@ -51,17 +53,17 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
     {
         $queues = [
             'failed',
-            'queue1',
+            self::QUEUE,
         ];
 
         foreach ($queues as $queue) {
-            $this->redis->sadd('queues', $queue);
+            $this->redis->sadd('queues', [$queue]);
         }
 
         $queues = $this->driver->listQueues();
 
         $this->assertContains('failed', $queues);
-        $this->assertContains('queue1', $queues);
+        $this->assertContains(self::QUEUE, $queues);
     }
 
     /**
@@ -69,11 +71,11 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
      */
     public function it_creates_a_queue()
     {
-        $this->driver->createQueue('send-newsletter');
+        $this->driver->createQueue(self::QUEUE);
 
         $queues = $this->redis->smembers('queues');
 
-        $this->assertContains('send-newsletter', $queues);
+        $this->assertContains(self::QUEUE, $queues);
     }
 
     /**
@@ -81,59 +83,72 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
      */
     public function it_counts_the_number_of_messages_in_a_queue()
     {
-        $this->redis->sadd('queues', 'send-newsletter');
-        $this->redis->rpush('queue:send-newsletter', 'This is a message');
-        $this->redis->rpush('queue:send-newsletter', 'This is a message');
-        $this->redis->rpush('queue:send-newsletter', 'This is a message');
-        $this->redis->rpush('queue:send-newsletter', 'This is a message');
+        $this->redis->sadd('queues', [self::QUEUE]);
 
-        $this->assertEquals(4, $this->driver->countMessages('send-newsletter'));
+        $this->redis->rpush('queue:'.self::QUEUE, [self::MESSAGE]);
+        $this->redis->rpush('queue:'.self::QUEUE, [self::MESSAGE]);
+        $this->redis->rpush('queue:'.self::QUEUE, [self::MESSAGE]);
+        $this->redis->rpush('queue:'.self::QUEUE, [self::MESSAGE]);
+
+        $this->assertEquals(4, $this->driver->countMessages(self::QUEUE));
     }
 
     /**
      * @test
      */
-    public function it_pushes_a_message()
+    public function it_pushes_a_message_to_a_queue()
     {
-        $this->redis->sadd('queues', 'send-newsletter');
+        $this->redis->sadd('queues', [self::QUEUE]);
 
-        $this->driver->pushMessage('send-newsletter', 'This is a message');
+        $this->driver->pushMessage(self::QUEUE, self::MESSAGE);
 
-        $message = $this->redis->blPop(['queue:send-newsletter'], 5);
+        $message = $this->redis->blPop(['queue:'.self::QUEUE], 5);
 
-        $this->assertEquals(['bernard:queue:send-newsletter', 'This is a message'], $message);
+        $this->assertEquals(['bernard:queue:'.self::QUEUE, self::MESSAGE], $message);
     }
 
     /**
      * @test
      */
-    public function it_pop_messages()
+    public function it_pops_messages_from_a_queue()
     {
-        $this->redis->sadd('queues', 'send-newsletter');
-        $this->redis->sadd('queues', 'ask-forgiveness');
-        $this->redis->rpush('queue:send-newsletter', 'message1');
-        $this->redis->rpush('queue:ask-forgiveness', 'message2');
+        $this->redis->sadd('queues', [self::QUEUE]);
+        $this->redis->rpush('queue:'.self::QUEUE, [self::MESSAGE]);
 
-        $this->assertEquals(['message1', null], $this->driver->popMessage('send-newsletter'));
-        $this->assertEquals(['message2', null], $this->driver->popMessage('ask-forgiveness', 30));
+        $this->assertEquals([self::MESSAGE, null], $this->driver->popMessage(self::QUEUE));
     }
 
     /**
      * @test
      */
-    public function it_peeks_in_a_queue()
+    public function it_returns_an_empty_message_when_popping_messages_from_an_empty_queue()
     {
-        $this->redis->sadd('queues', 'my-queue');
-        $this->redis->sadd('queues', 'send-newsletter');
-        $this->redis->rpush('queue:my-queue', 'message5');
-        $this->redis->rpush('queue:my-queue', 'message4');
-        $this->redis->rpush('queue:my-queue', 'message3');
-        $this->redis->rpush('queue:my-queue', 'message2');
-        $this->redis->rpush('queue:my-queue', 'message1');
-        $this->redis->rpush('queue:send-newsletter', 'message2');
+        $this->assertEquals([null, null], $this->driver->popMessage(self::QUEUE, 1));
+    }
 
-        $this->assertEquals(['message1'], $this->driver->peekQueue('my-queue', 4, 10));
-        $this->assertEquals(['message2'], $this->driver->peekQueue('send-newsletter'));
+    /**
+     * @test
+     */
+    public function it_peeks_a_queue()
+    {
+        $this->redis->sadd('queues', [self::QUEUE]);
+        $this->redis->rpush('queue:'.self::QUEUE, [self::MESSAGE.'1']);
+        $this->redis->rpush('queue:'.self::QUEUE, [self::MESSAGE.'2']);
+        $this->redis->rpush('queue:'.self::QUEUE, [self::MESSAGE.'3']);
+        $this->redis->rpush('queue:'.self::QUEUE, [self::MESSAGE.'4']);
+        $this->redis->rpush('queue:'.self::QUEUE, [self::MESSAGE.'5']);
+
+        $this->assertEquals([self::MESSAGE.'5'], $this->driver->peekQueue(self::QUEUE, 4, 10));
+        $this->assertEquals(
+            [
+                self::MESSAGE.'1',
+                self::MESSAGE.'2',
+                self::MESSAGE.'3',
+                self::MESSAGE.'4',
+                self::MESSAGE.'5',
+            ],
+            $this->driver->peekQueue(self::QUEUE)
+        );
     }
 
     /**
@@ -141,12 +156,12 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
      */
     public function it_removes_a_queue()
     {
-        $this->redis->sadd('queues', 'name');
-        $this->redis->rpush('queue:name', 'message1');
+        $this->redis->sadd('queues', [self::QUEUE]);
+        $this->redis->rpush('queue:'.self::QUEUE, [self::MESSAGE]);
 
-        $this->driver->removeQueue('name');
+        $this->driver->removeQueue(self::QUEUE);
 
-        $this->assertNull($this->redis->get('queue:name'));
-        $this->assertNotContains('name', $this->redis->smembers('queues'));
+        $this->assertNull($this->redis->get('queue:'.self::QUEUE));
+        $this->assertNotContains(self::QUEUE, $this->redis->smembers('queues'));
     }
 }

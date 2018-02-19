@@ -1,0 +1,6 @@
+version: "2.1"
+
+services:
+    beanstalkd:
+        ports:
+            - "11300:11300"

@@ -8,6 +8,9 @@ use Prophecy\Prophecy\ObjectProphecy;
 
 final class DriverTest extends \PHPUnit\Framework\TestCase
 {
+    const QUEUE = 'queue';
+    const MESSAGE = 'message';
+
     /**
      * @var IronMQ|ObjectProphecy
      */
@@ -38,17 +41,15 @@ final class DriverTest extends \PHPUnit\Framework\TestCase
      */
     public function it_lists_queues()
     {
-        $queues = [
-            'failed',
-            'queue1',
-        ];
-
         $this->ironmq->getQueues(0, 100)->willReturn([
             (object) ['name' => 'failed'],
-            (object) ['name' => 'queue1'],
+            (object) ['name' => self::QUEUE],
         ]);
 
-        $this->assertEquals($queues, $this->driver->listQueues());
+        $queues = $this->driver->listQueues();
+
+        $this->assertContains('failed', $queues);
+        $this->assertContains(self::QUEUE, $queues);
     }
 
     /**
@@ -56,55 +57,55 @@ final class DriverTest extends \PHPUnit\Framework\TestCase
      */
     public function it_counts_the_number_of_messages_in_a_queue()
     {
-        $this->ironmq->getQueue('send-newsletter')->willReturn((object) ['size' => 4]);
-        $this->ironmq->getQueue('non-existent')->willReturn(null);
+        $this->ironmq->getQueue(self::QUEUE)->willReturn((object) ['size' => 4]);
 
-        $this->assertEquals(4, $this->driver->countMessages('send-newsletter'));
-        $this->assertEquals(0, $this->driver->countMessages('non-existent'));
+        $this->assertEquals(4, $this->driver->countMessages(self::QUEUE));
     }
 
     /**
      * @test
      */
-    public function it_pushes_a_message()
+    public function it_pushes_a_message_to_a_queue()
     {
-        $this->ironmq->postMessage('my-queue', 'This is a message')->shouldBeCalled();
+        $this->ironmq->postMessage(self::QUEUE, self::MESSAGE)->shouldBeCalled();
 
-        $this->driver->pushMessage('my-queue', 'This is a message');
+        $this->driver->pushMessage(self::QUEUE, self::MESSAGE);
     }
 
     /**
      * @test
      */
-    public function it_pops_messages()
+    public function it_pops_messages_from_a_queue()
     {
-        $this->ironmq->reserveMessages('my-queue1', 2, IronMQ::GET_MESSAGE_TIMEOUT, 5)->willReturn([
-            (object) ['body' => 'message1', 'id' => 1],
+        $this->ironmq->reserveMessages(self::QUEUE, 2, IronMQ::GET_MESSAGE_TIMEOUT, 5)->willReturn([
+            (object) ['body' => self::MESSAGE, 'id' => 1],
         ]);
 
-        $this->ironmq->reserveMessages('my-queue2', 2, IronMQ::GET_MESSAGE_TIMEOUT, 5)->willReturn([
-            (object) ['body' => 'message2', 'id' => 2],
-        ]);
-
-        $this->ironmq->reserveMessages('my-queue3', 2, IronMQ::GET_MESSAGE_TIMEOUT, 5)->willReturn(null);
-
-        $this->assertEquals(['message1', 1], $this->driver->popMessage('my-queue1'));
-        $this->assertEquals(['message2', 2], $this->driver->popMessage('my-queue2'));
-        $this->assertEquals([null, null], $this->driver->popMessage('my-queue3'));
+        $this->assertEquals([self::MESSAGE, 1], $this->driver->popMessage(self::QUEUE));
     }
 
     /**
      * @test
      */
-    public function it_prefetches_messages()
+    public function it_returns_an_empty_message_when_popping_messages_from_an_empty_queue()
     {
-        $this->ironmq->reserveMessages('send-newsletter', 2, IronMQ::GET_MESSAGE_TIMEOUT, 5)->willReturn([
-            (object) ['body' => 'message1', 'id' => 1],
-            (object) ['body' => 'message2', 'id' => 2],
+        $this->ironmq->reserveMessages(self::QUEUE, 2, IronMQ::GET_MESSAGE_TIMEOUT, 5)->willReturn(null);
+
+        $this->assertEquals([null, null], $this->driver->popMessage(self::QUEUE));
+    }
+
+    /**
+     * @test
+     */
+    public function it_prefetches_messages_from_a_queue()
+    {
+        $this->ironmq->reserveMessages(self::QUEUE, 2, IronMQ::GET_MESSAGE_TIMEOUT, 5)->willReturn([
+            (object) ['body' => self::MESSAGE, 'id' => 1],
+            (object) ['body' => self::MESSAGE, 'id' => 2],
         ]);
 
-        $this->assertEquals(['message1', 1], $this->driver->popMessage('send-newsletter'));
-        $this->assertEquals(['message2', 2], $this->driver->popMessage('send-newsletter'));
+        $this->assertEquals([self::MESSAGE, 1], $this->driver->popMessage(self::QUEUE));
+        $this->assertEquals([self::MESSAGE, 2], $this->driver->popMessage(self::QUEUE));
     }
 
     /**
@@ -112,24 +113,21 @@ final class DriverTest extends \PHPUnit\Framework\TestCase
      */
     public function it_acknowledges_a_message()
     {
-        $this->ironmq->deleteMessage('my-queue', 'receipt')->shouldBeCalled();
+        $this->ironmq->deleteMessage(self::QUEUE, 'receipt')->shouldBeCalled();
 
-        $this->driver->acknowledgeMessage('my-queue', 'receipt');
+        $this->driver->acknowledgeMessage(self::QUEUE, 'receipt');
     }
 
     /**
      * @test
      */
-    public function it_peeks_in_a_queue()
+    public function it_peeks_a_queue()
     {
-        $this->ironmq->peekMessages('my-queue', 10)->willReturn([
-            (object) ['body' => 'message1'],
+        $this->ironmq->peekMessages(self::QUEUE, 10)->willReturn([
+            (object) ['body' => self::MESSAGE],
         ]);
 
-        $this->ironmq->peekMessages('my-queue2', 20)->willReturn(null);
-
-        $this->assertEquals(['message1'], $this->driver->peekQueue('my-queue', 10, 10));
-        $this->assertEquals([], $this->driver->peekQueue('my-queue2'));
+        $this->assertEquals([self::MESSAGE], $this->driver->peekQueue(self::QUEUE, 10, 10));
     }
 
     /**
@@ -137,9 +135,9 @@ final class DriverTest extends \PHPUnit\Framework\TestCase
      */
     public function it_removes_a_queue()
     {
-        $this->ironmq->deleteQueue('my-queue')->shouldBeCalled();
+        $this->ironmq->deleteQueue(self::QUEUE)->shouldBeCalled();
 
-        $this->driver->removeQueue('my-queue');
+        $this->driver->removeQueue(self::QUEUE);
     }
 
     /**

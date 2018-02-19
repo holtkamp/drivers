@@ -6,7 +6,6 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use Bernard\Driver\Amqp\Driver;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exception\AMQPProtocolException;
-use PhpAmqpLib\Exception\AMQPRuntimeException;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
@@ -14,6 +13,10 @@ use PhpAmqpLib\Message\AMQPMessage;
  */
 final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
 {
+    const EXCHANGE = 'exchange';
+    const QUEUE = 'queue';
+    const MESSAGE = 'message';
+
     /**
      * @var AMQPStreamConnection
      */
@@ -30,26 +33,49 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
     private $driver;
 
     /**
-     * @var string
+     * Skip cleaning up the queue (eg. cleanup is part of the test).
+     *
+     * @var bool
      */
-    private $exchange;
+    private $skipCleanup = false;
 
     public function setUp()
     {
+        $this->skipCleanup = false;
+
         $this->amqp = new AMQPStreamConnection($_ENV['RABBITMQ_HOST'], $_ENV['RABBITMQ_PORT'], 'guest', 'guest');
+
         $this->channel = $this->amqp->channel();
 
-        $this->driver = new Driver($this->amqp, $this->exchange = 'exchange');
+        $this->channel->exchange_declare(self::EXCHANGE, 'direct', false, true, false);
+        $this->channel->queue_declare(self::QUEUE, false, true, false, false);
+        $this->channel->queue_bind(self::QUEUE, self::EXCHANGE, self::QUEUE);
+
+        $this->driver = new Driver($this->amqp, self::EXCHANGE);
     }
 
     public function tearDown()
     {
-        try {
-            $this->channel->queue_delete('send-newsletter');
-        } catch (AMQPRuntimeException $e) {
+        if (!$this->channel) {
+            $this->channel = $this->amqp->channel();
+        }
+
+        if (!$this->skipCleanup) {
+            $this->channel->queue_delete(self::QUEUE);
         }
 
         $this->channel->close();
+    }
+
+    /**
+     * Publishes a simple test message to the queue.
+     *
+     * @param string $queue
+     * @param string $message
+     */
+    private function publish($queue = self::QUEUE, $message = self::MESSAGE)
+    {
+        $this->channel->basic_publish(new AMQPMessage($message), self::EXCHANGE, $queue);
     }
 
     /**
@@ -57,15 +83,17 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
      */
     public function it_creates_a_queue()
     {
-        $this->driver->createQueue('send-newsletter');
+        $queue = 'other-queue';
 
-        $amqpMessage = new AMQPMessage('This is a message');
-        $this->channel->basic_publish($amqpMessage, $this->exchange, 'send-newsletter');
+        $this->driver->createQueue($queue);
 
-        /** @var AMQPMessage $returnedMessage */
-        $returnedMessage = $this->channel->basic_get('send-newsletter');
+        $this->publish($queue);
 
-        $this->assertEquals($amqpMessage->body, $returnedMessage->body);
+        /** @var AMQPMessage $message */
+        $message = $this->channel->basic_get($queue);
+
+        $this->assertInstanceOf(AMQPMessage::class, $message);
+        $this->assertEquals(self::MESSAGE, $message->body);
     }
 
     /**
@@ -73,70 +101,77 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
      */
     public function it_counts_the_number_of_messages_in_a_queue()
     {
-        $this->createQueue('send-newsletter');
+        $count = 3;
 
-        $amqpMessage = new AMQPMessage('This is a message');
-        $this->channel->basic_publish($amqpMessage, $this->exchange, 'send-newsletter');
-
-        $amqpMessage = new AMQPMessage('This is another message');
-        $this->channel->basic_publish($amqpMessage, $this->exchange, 'send-newsletter');
+        for ($i = 0; $i < $count; ++$i) {
+            $this->publish();
+        }
 
         // TODO: find out why things are slow on travis
         sleep(1);
 
-        $this->assertEquals(2, $this->driver->countMessages('send-newsletter'));
+        $this->assertEquals($count, $this->driver->countMessages(self::QUEUE));
     }
 
     /**
      * @test
      */
-    public function it_pushes_a_message()
+    public function it_pushes_a_message_to_a_queue()
     {
-        $this->createQueue('send-newsletter');
-
-        $this->driver->pushMessage('send-newsletter', 'This is a message');
+        $this->driver->pushMessage(self::QUEUE, self::MESSAGE);
 
         // TODO: find out why things are slow on travis
         sleep(1);
 
-        /** @var AMQPMessage $returnedMessage */
-        $returnedMessage = $this->channel->basic_get('send-newsletter');
+        /** @var AMQPMessage $message */
+        $message = $this->channel->basic_get(self::QUEUE);
 
-        $this->assertEquals('This is a message', $returnedMessage->body);
+        $this->assertInstanceOf(AMQPMessage::class, $message);
+        $this->assertEquals(self::MESSAGE, $message->body);
     }
 
     /**
      * @test
      */
-    public function it_pushes_a_message_with_properties()
+    public function it_pushes_a_message_to_a_queue_with_properties()
     {
-        $this->createQueue('send-newsletter');
+        $properties = ['content_type' => 'text'];
 
-        $driver = new Driver($this->amqp, $this->exchange, ['content_type' => 'text']);
+        $driver = new Driver($this->amqp, self::EXCHANGE, $properties);
 
-        $driver->pushMessage('send-newsletter', 'This is a message');
+        $driver->pushMessage(self::QUEUE, self::MESSAGE);
 
         // TODO: find out why things are slow on travis
         sleep(1);
 
-        /** @var AMQPMessage $returnedMessage */
-        $returnedMessage = $this->channel->basic_get('send-newsletter');
+        /** @var AMQPMessage $message */
+        $message = $this->channel->basic_get(self::QUEUE);
 
-        $this->assertEquals('This is a message', $returnedMessage->body);
-        $this->assertEquals(['content_type' => 'text'], $returnedMessage->get_properties());
+        $this->assertInstanceOf(AMQPMessage::class, $message);
+        $this->assertEquals(self::MESSAGE, $message->body);
+        $this->assertEquals($properties, $message->get_properties());
     }
 
     /**
      * @test
      */
-    public function it_pops_messages()
+    public function it_pops_messages_from_a_queue()
     {
-        $this->createQueue('send-newsletter');
+        $this->publish();
 
-        $amqpMessage = new AMQPMessage('This is a message');
-        $this->channel->basic_publish($amqpMessage, $this->exchange, 'send-newsletter');
+        // TODO: find out why things are slow on travis
+        sleep(1);
 
-        $this->assertEquals(['This is a message', '1'], $this->driver->popMessage('send-newsletter'));
+        // The queue is always recreated, so the delivery tag is always 1
+        $this->assertEquals([self::MESSAGE, '1'], $this->driver->popMessage(self::QUEUE));
+    }
+
+    /**
+     * @test
+     */
+    public function it_returns_an_empty_message_when_popping_messages_from_an_empty_queue()
+    {
+        $this->assertEquals([null, null], $this->driver->popMessage(self::QUEUE, 1));
     }
 
     /**
@@ -144,19 +179,25 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
      */
     public function it_acknowledges_a_message()
     {
-        $this->createQueue('send-newsletter');
+        $this->publish();
 
-        $amqpMessage = new AMQPMessage('This is a message');
-        $this->channel->basic_publish($amqpMessage, $this->exchange, 'send-newsletter');
+        // Publish an extra message
+        $this->publish();
 
-        /** @var AMQPMessage $returnedMessage */
-        $returnedMessage = $this->channel->basic_get('send-newsletter');
+        // TODO: find out why things are slow on travis
+        sleep(1);
 
-        $this->driver->acknowledgeMessage('send-newsletter', $returnedMessage->delivery_info['delivery_tag']);
+        // Do not ack the message automatically
+        /** @var AMQPMessage $message */
+        $message = $this->channel->basic_get(self::QUEUE, true);
 
-        // No messages remained in the queue
-        $result = $this->channel->queue_purge('send-newsletter');
-        $this->assertEquals(0, $result);
+        $this->assertInstanceOf(AMQPMessage::class, $message);
+
+        $this->driver->acknowledgeMessage(self::QUEUE, $message->delivery_info['delivery_tag']);
+
+        // One message remained in the queue
+        $result = $this->channel->queue_purge(self::QUEUE);
+        $this->assertEquals(1, $result);
     }
 
     /**
@@ -164,28 +205,15 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
      */
     public function it_removes_a_queue()
     {
-        $this->createQueue('send-newsletter');
+        $this->skipCleanup = true;
 
-        $this->driver->removeQueue('send-newsletter');
+        $this->driver->removeQueue(self::QUEUE);
 
-        $amqpMessage = new AMQPMessage('This is a message');
-        $this->channel->basic_publish($amqpMessage, $this->exchange, 'send-newsletter');
+        $this->publish();
 
         $this->expectException(AMQPProtocolException::class);
-        $this->expectExceptionMessage(sprintf("NOT_FOUND - no queue '%s' in vhost '/'", 'send-newsletter'));
+        $this->expectExceptionMessage(sprintf("NOT_FOUND - no queue '%s' in vhost '/'", self::QUEUE));
 
-        $this->channel->basic_get('send-newsletter');
-    }
-
-    /**
-     * Creates a new queue.
-     *
-     * @param $queueName
-     */
-    private function createQueue($queueName)
-    {
-        $this->channel->exchange_declare($this->exchange, 'direct', false, true, false);
-        $this->channel->queue_declare($queueName, false, true, false, false);
-        $this->channel->queue_bind($queueName, $this->exchange, $queueName);
+        $this->channel->basic_get(self::QUEUE);
     }
 }

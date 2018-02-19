@@ -15,6 +15,8 @@ php:
 
 services:
     - docker
+    - rabbitmq
+    - redis
 
 env:
     global:
@@ -43,9 +45,9 @@ install:
     - travis_retry composer update ${COMPOSER_FLAGS} --prefer-dist --no-interaction
 
 before_script:
-    - cp docker-compose.override.yml.dist docker-compose.override.yml
+    - cp docker-compose.override.yml.ci docker-compose.override.yml
     - docker-compose up -d
-    - sleep 5
+    - timeout 15 bash -c 'until echo > /dev/tcp/localhost/11300; do sleep 0.5; done'
 
 script: $TEST_COMMAND
 
