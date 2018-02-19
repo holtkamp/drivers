@@ -18,6 +18,7 @@
         "bernard/bernard": "dev-master"
     },
     "replace": {
+        "bernard/ironmq-driver": "self.version",
         "bernard/pheanstalk-driver": "self.version",
         "bernard/predis-driver": "self.version",
         "bernard/redis-driver": "self.version",
@@ -25,6 +26,7 @@
     },
     "require-dev": {
         "ext-redis": "*",
+        "iron-io/iron_mq": "^4.0",
         "pda/pheanstalk": "^3.0",
         "phpspec/prophecy": "^1.6.0",
         "phpunit/phpunit": "^5.7 || ^6.0 || ^7.0",
