@@ -3,3 +3,6 @@ version: "2.1"
 services:
     beanstalkd:
         image: webplates/beanstalkd
+
+    redis:
+        image: redis

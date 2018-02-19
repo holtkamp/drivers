@@ -35,6 +35,7 @@ matrix:
 
 before_install:
     - if [[ $COVERAGE != true ]]; then phpenv config-rm xdebug.ini || true; fi
+    - echo "extension=redis.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 install:
     # To be removed when this issue will be resolved: https://github.com/composer/composer/issues/5355

@@ -18,9 +18,11 @@
         "bernard/bernard": "dev-master"
     },
     "replace": {
-        "bernard/pheanstalk-driver": "self.version"
+        "bernard/pheanstalk-driver": "self.version",
+        "bernard/redis-driver": "self.version"
     },
     "require-dev": {
+        "ext-redis": "*",
         "pda/pheanstalk": "^3.0",
         "phpunit/phpunit": "^5.7 || ^6.0 || ^7.0"
     },

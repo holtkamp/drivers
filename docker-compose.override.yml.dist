@@ -4,3 +4,7 @@ services:
     beanstalkd:
         ports:
             - "11300:11300"
+
+    redis:
+        ports:
+            - "6379:6379"
