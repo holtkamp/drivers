@@ -21,6 +21,7 @@ $ composer require bernard/drivers
 ## Drivers
 
 - [Pheanstalk](src/Pheanstalk)
+- [Queue Interop](src/QueueInterop)
 
 
 ## License

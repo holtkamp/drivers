@@ -20,14 +20,17 @@
     "replace": {
         "bernard/pheanstalk-driver": "self.version",
         "bernard/predis-driver": "self.version",
-        "bernard/redis-driver": "self.version"
+        "bernard/redis-driver": "self.version",
+        "bernard/queue-interop-driver": "self.version"
     },
     "require-dev": {
         "ext-redis": "*",
         "pda/pheanstalk": "^3.0",
         "phpspec/prophecy": "^1.6.0",
         "phpunit/phpunit": "^5.7 || ^6.0 || ^7.0",
-        "predis/predis": "^1.0"
+        "predis/predis": "^1.0",
+        "queue-interop/amqp-interop": "^0.6",
+        "queue-interop/queue-interop": "^0.6"
     },
     "autoload": {
         "psr-4": {
