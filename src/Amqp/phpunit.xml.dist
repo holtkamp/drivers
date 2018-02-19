@@ -6,7 +6,7 @@
 >
 
     <testsuites>
-        <testsuite name="Bernard Redis Driver Test Suite">
+        <testsuite name="Bernard AMQP Driver Test Suite">
             <directory>./Tests/</directory>
         </testsuite>
     </testsuites>

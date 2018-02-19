@@ -7,9 +7,9 @@ use Pheanstalk\Exception\ServerException;
 use Pheanstalk\Pheanstalk;
 
 /**
- * @group functional
+ * @group integration
  */
-final class FunctionalDriverTest extends \PHPUnit\Framework\TestCase
+final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var Pheanstalk
