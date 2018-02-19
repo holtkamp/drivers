@@ -127,7 +127,6 @@ final class DriverTest extends \PHPUnit\Framework\TestCase
             (object) ['body' => self::MESSAGE],
         ]);
 
-
         $this->assertEquals([self::MESSAGE], $this->driver->peekQueue(self::QUEUE, 10, 10));
     }
 

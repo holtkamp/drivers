@@ -103,7 +103,7 @@ final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
     {
         $count = 3;
 
-        for ($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count; ++$i) {
             $this->publish();
         }
 
