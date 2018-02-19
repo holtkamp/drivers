@@ -51,15 +51,15 @@
         "clean": "rm -rf build/ vendor/",
         "test": "vendor/bin/phpunit -v",
         "test-coverage": "vendor/bin/phpunit -v --coverage-text --coverage-clover=build/unit_coverage.xml",
-        "test-functional": "vendor/bin/phpunit -v --group functional",
-        "test-functional-coverage": "vendor/bin/phpunit -v --group functional --coverage-clover=build/functional_coverage.xml",
+        "test-integration": "vendor/bin/phpunit -v --group integration",
+        "test-integration-coverage": "vendor/bin/phpunit -v --group integration --coverage-clover=build/integration_coverage.xml",
         "test-ci": [
             "@test",
-            "@test-functional"
+            "@test-integration"
         ],
         "test-ci-coverage": [
             "@test-coverage",
-            "@test-functional-coverage"
+            "@test-integration-coverage"
         ]
     },
     "extra": {

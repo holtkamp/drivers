@@ -54,5 +54,5 @@ after_success: >
         wget https://scrutinizer-ci.com/ocular.phar
 
         php ocular.phar code-coverage:upload --format=php-clover build/unit_coverage.xml
-        php ocular.phar code-coverage:upload --format=php-clover build/functional_coverage.xml
+        php ocular.phar code-coverage:upload --format=php-clover build/integration_coverage.xml
     fi

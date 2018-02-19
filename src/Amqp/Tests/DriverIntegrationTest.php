@@ -10,9 +10,9 @@ use PhpAmqpLib\Exception\AMQPRuntimeException;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
- * @group functional
+ * @group integration
  */
-final class FunctionalDriverTest extends \PHPUnit\Framework\TestCase
+final class DriverIntegrationTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var AMQPStreamConnection
