@@ -28,6 +28,30 @@ $ composer require bernard/drivers
 - [Redis](src/Redis)
 
 
+## Testing
+
+### Running tests locally
+
+Build the provided `Dockerfile`:
+
+```bash
+$ docker build -t bernardphp .
+```
+
+Start the services using Docker Compose:
+
+```bash
+$ docker-compose up -d
+```
+
+Wait for them to start. Then execute the test suites:
+
+```bash
+$ docker run --rm -it -v $PWD:/app -w /app --network drivers_default bernard vendor/bin/phpunit
+$ docker run --rm -it -v $PWD:/app -w /app --network drivers_default bernard vendor/bin/phpunit --group integration
+```
+
+
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE) for more information.
