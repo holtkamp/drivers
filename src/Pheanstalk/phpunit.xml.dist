@@ -5,23 +5,18 @@
          bootstrap="vendor/autoload.php"
 >
 
-    <php>
-        <env name="BEANSTALKD_HOST" value="127.0.0.1"/>
-        <env name="BEANSTALKD_PORT" value="11300"/>
-    </php>
-
     <testsuites>
-        <testsuite name="Bernard Driver Test Suite">
-            <directory>./src/*/Tests/</directory>
+        <testsuite name="Bernard Pheanstalk Driver Test Suite">
+            <directory>./Tests/</directory>
         </testsuite>
     </testsuites>
 
     <filter>
         <whitelist>
-            <directory suffix=".php">./src</directory>
+            <directory suffix=".php">./</directory>
             <exclude>
-                <directory>./src/*/Tests</directory>
-                <directory>./src/*/vendor</directory>
+                <directory>./Tests</directory>
+                <directory>./vendor</directory>
             </exclude>
         </whitelist>
     </filter>
