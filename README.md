@@ -21,7 +21,9 @@ $ composer require bernard/drivers
 ## Drivers
 
 - [Pheanstalk](src/Pheanstalk)
+- [Predis](src/Predis)
 - [Queue Interop](src/QueueInterop)
+- [Redis](src/Redis)
 
 
 ## License
