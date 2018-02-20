@@ -22,10 +22,12 @@
         "bernard/ironmq-driver": "self.version",
         "bernard/pheanstalk-driver": "self.version",
         "bernard/predis-driver": "self.version",
+        "bernard/queue-interop-driver": "self.version",
         "bernard/redis-driver": "self.version",
-        "bernard/queue-interop-driver": "self.version"
+        "bernard/sqs-driver": "self.version"
     },
     "require-dev": {
+        "aws/aws-sdk-php": "^3.20",
         "ext-redis": "*",
         "iron-io/iron_mq": "^4.0",
         "pda/pheanstalk": "^3.0",
