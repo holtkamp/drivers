@@ -52,6 +52,8 @@ $ docker run --rm -it -v $PWD:/app -w /app --network drivers_default bernard ven
 $ docker run --rm -it -v $PWD:/app -w /app --network drivers_default bernard vendor/bin/phpunit --group integration
 ```
 
+`drivers_default` is the network name created by Docker Compose.
+
 
 ## License
 
