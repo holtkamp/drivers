@@ -2,8 +2,6 @@
 
 [![Latest Version](https://img.shields.io/github/release/bernardphp/drivers.svg?style=flat-square)](https://github.com/bernardphp/drivers/releases)
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/bernardphp/drivers/CI?style=flat-square)](https://github.com/bernardphp/drivers/actions?query=workflow%3ACI)
-[![Code Coverage](https://img.shields.io/scrutinizer/coverage/g/bernardphp/drivers.svg?style=flat-square)](https://scrutinizer-ci.com/g/bernardphp/drivers)
-[![Quality Score](https://img.shields.io/scrutinizer/g/bernardphp/drivers.svg?style=flat-square)](https://scrutinizer-ci.com/g/bernardphp/drivers)
 [![Total Downloads](https://img.shields.io/packagist/dt/bernard/drivers.svg?style=flat-square)](https://packagist.org/packages/bernard/drivers)
 
 **Official Bernard drivers.**
